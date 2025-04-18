@@ -1,0 +1,70 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Trắc nghiệm & Xếp hạng</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="main-heading">
+    Cuộc thi tìm hiểu 50 năm ngày giải phóng miền Nam, thống nhất đất nước<br>
+    <span class="sub"> (30/4/1975 - 30/4/2025) </span>
+  </div>
+  
+  <div id="adminLogin" style="position: fixed; bottom: 5px; left: 10px; color: white; cursor: pointer;" onclick="showAdminLogin()">
+    © 2019 Copyright QuangDuy
+  </div>
+
+  <div class="bottom-buttons">
+    <button class="reset-btn" onclick="showResetPrompt()">🔒 Reset Ranking</button>
+    <button class="participants-btn" onclick="showViewParticipantsPrompt()">👥 người tham gia</button>
+    <button class="ranking-btn" onclick="showRankingWithPassword()">📊 Xem bảng xếp hạng</button>
+  </div>
+
+  <div class="container">
+    <div class="form-section" id="infoSection">
+      <h2>Thông tin học sinh</h2>
+      <input type="text" id="studentName" placeholder="Nhập họ tên">
+      <input type="text" id="studentClass" placeholder="Nhập lớp">
+      <input type="number" id="studentPrediction" placeholder="Nhập dự đoán số người tham gia" min="1">
+      <button onclick="startQuiz()">Xác nhận & Bắt đầu</button>
+    </div>
+  </div>
+
+    <div class="quiz-section hidden" id="quizSection">
+      <div class="timer">Thời gian làm bài: <span id="timer">00:00:00</span></div>
+      <div id="questionBox"></div>
+      <button id="nextBtn" onclick="nextQuestion()">Câu tiếp theo</button>
+    </div>
+
+    <div id="hiddenRanking" style="display:none">
+      <div class="ranking-section">
+        <h2>Bảng xếp hạng</h2>
+        <table id="rankingTable">
+          <thead>
+            <tr>
+              <th>Hạng</th>
+              <th>Họ tên</th>
+              <th>Lớp</th>
+              <th>Dự đoán tham gia</th>
+              <th>Điểm</th>
+              <th>Thời gian (giây)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+
+    <div class="floating-ranking" id="floatingRanking">
+      <h3>🏆 Top 5</h3>
+      <ul id="topRankingList"></ul>
+    </div>
+  </div>
+
+  <script src="questions.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
