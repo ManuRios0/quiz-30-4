@@ -2,7 +2,7 @@ let currentQuestion = 0;
 let score = 0;
 let startTime, timerInterval;
 let studentName = "", studentClass = "", studentPrediction = "";
-const API_URL = "https://script.google.com/macros/s/AKfycbxYVQZOFtoDJFfORgQ9Fb9ZoA6PIayy7TXRSilG_02RG16xJOJObiLu5uXPQvke3weO/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbww9kyaStwKd4S1jYSBKpbT-yyftdvNwbg50Z7_zYvNTt1jbE1Bp426kwSrEjz-jb0d4Q/exec";
 
 function normalizeString(str) {
   return str.trim().toLowerCase().replace(/\s+/g, " ");
