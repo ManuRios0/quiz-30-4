@@ -1,14 +1,12 @@
-
 let currentQuestion = 0;
 let score = 0;
 let startTime, timerInterval;
 let studentName = "", studentClass = "", studentPrediction = "";
-let rankingList = JSON.parse(localStorage.getItem("rankingList")) || [];
+const API_URL = "https://script.google.com/macros/s/AKfycbyZ5pPURF4XU4LgJhgBybq5VVj54UD28UA1KBc8svLAF7rpapOMNR6aPHREKzi1212Y/exec";
 
 function normalizeString(str) {
   return str.trim().toLowerCase().replace(/\s+/g, " ");
 }
-
 
 function startQuiz() {
   studentName = document.getElementById("studentName").value.trim();
@@ -19,25 +17,6 @@ function startQuiz() {
     return;
   }
 
-  // ✅ chuẩn hóa tên và lớp
-  const normalizedName = normalizeString(studentName);
-  const normalizedClass = normalizeString(studentClass);
-
-  // ❌ kiểm tra xem học sinh đã tham gia chưa
-  const hasPlayed = rankingList.some(entry =>
-    normalizeString(entry.name) === normalizedName &&
-    normalizeString(entry.class) === normalizedClass
-  );
-
-  if (hasPlayed) {
-    alert("Bạn đã tham gia rồi và chỉ được chơi 1 lần.");
-    return;
-  }
-
-
-  
-
-  // ✅ cho phép bắt đầu làm bài
   document.getElementById("infoSection").classList.add("hidden");
   document.getElementById("quizSection").classList.remove("hidden");
 
@@ -46,8 +25,6 @@ function startQuiz() {
   timerInterval = setInterval(updateTimer, 1000);
   showQuestion();
 }
-
-
 
 function updateTimer() {
   const now = new Date();
@@ -64,40 +41,15 @@ function showQuestion() {
   const shuffledOptions = q.options.sort(() => Math.random() - 0.5);
 
   shuffledOptions.forEach(option => {
-    html += `
-      <button class="option-btn" onclick="selectOption('${option}')">
-        ${option}
-      </button>
-    `;
+    html += `<button class="option-btn" onclick="selectOption('${option}')">${option}</button>`;
   });
 
   document.getElementById("questionBox").innerHTML = html;
-  document.getElementById("nextBtn").style.display = "none"; // Ẩn nút "Câu tiếp theo"
+  document.getElementById("nextBtn").style.display = "none";
 }
 
-// ➡️ Thêm mới function này:
 function selectOption(selectedOption) {
-  if (selectedOption === questions[currentQuestion].answer) {
-    score++;
-  }
-  currentQuestion++;
-  if (currentQuestion >= questions.length) {
-    finishQuiz();
-  } else {
-    showQuestion();
-  }
-}
-
-
-function nextQuestion() {
-  const selected = document.querySelector('input[name="option"]:checked');
-  if (!selected) {
-    alert("Vui lòng chọn một đáp án!");
-    return;
-  }
-  const answer = selected.value;
-  if (answer === questions[currentQuestion].answer) score++;
-
+  if (selectedOption === questions[currentQuestion].answer) score++;
   currentQuestion++;
   if (currentQuestion >= questions.length) {
     finishQuiz();
@@ -110,21 +62,24 @@ function finishQuiz() {
   clearInterval(timerInterval);
   const totalSeconds = Math.floor((new Date() - startTime) / 1000);
 
-  rankingList.push({
+  const data = {
     name: studentName,
     class: studentClass,
     prediction: studentPrediction,
     score: score,
     time: totalSeconds
-  });
-  rankingList.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return a.time - b.time;
-  });
+  };
 
-  localStorage.setItem("rankingList", JSON.stringify(rankingList));
-  updateRankingTable();
-  updateFloatingRanking();
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" }
+  })
+    .then(res => res.text())
+    .then(response => {
+      console.log("Server response:", response);
+      loadRanking();
+    });
 
   document.getElementById("quizSection").innerHTML = `
     <h2>Hoàn thành!</h2>
@@ -133,74 +88,47 @@ function finishQuiz() {
   `;
 }
 
-function updateRankingTable() {
+// 🟡 Lấy bảng xếp hạng từ Google Sheet
+function loadRanking() {
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      data.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.time - b.time;
+      });
+      updateRankingTable(data);
+      updateFloatingRanking(data);
+    });
+}
+
+function updateRankingTable(rankingList) {
   const tbody = document.querySelector("#rankingTable tbody");
   tbody.innerHTML = "";
   rankingList.forEach((item, index) => {
     const row = `<tr>
-  <td>${index + 1}</td>
-  <td>${item.name}</td>
-  <td>${item.class}</td>
-  <td>${item.prediction}</td>
-  <td>${item.score}/${questions.length}</td>
-  <td>${item.time}</td>
-</tr>`;
+      <td>${index + 1}</td>
+      <td>${item.name}</td>
+      <td>${item.class}</td>
+      <td>${item.prediction}</td>
+      <td>${item.score}/${questions.length}</td>
+      <td>${item.time}</td>
+    </tr>`;
     tbody.innerHTML += row;
   });
 }
 
-function updateFloatingRanking() {
+function updateFloatingRanking(rankingList) {
   const topList = document.getElementById("topRankingList");
   topList.innerHTML = "";
-
-  const data = JSON.parse(localStorage.getItem("rankingList")) || [];
-  data.slice(0, 5).forEach((entry, index) => {
+  rankingList.slice(0, 5).forEach((entry, index) => {
     const li = document.createElement("li");
-    li.textContent = `${index + 1}. ${entry.name} - ${entry.class}đ`;
+    li.textContent = `${index + 1}. ${entry.name} - ${entry.class}`;
     topList.appendChild(li);
   });
 }
 
-
-window.onload = () => {
-  updateRankingTable();
-  updateFloatingRanking();
-};
-function showResetPrompt() {
-  const password = prompt("Nhập mật khẩu để reset bảng xếp hạng:");
-  if (password === "0966521047") {
-    if (confirm("Bạn có chắc muốn xóa toàn bộ bảng xếp hạng không?")) {
-      rankingList = [];
-      updateRankingTable();
-      localStorage.removeItem("rankingList");
-      alert("Đã xóa bảng xếp hạng.");
-    }
-  } else {
-    alert("Sai mật khẩu!");
-  }
-}
-function showViewParticipantsPrompt() {
-  const password = prompt("Nhập mật khẩu để xem số người tham gia:");
-  if (password === "0966521047") {
-    const total = localStorage.getItem("rankingList")
-  ? JSON.parse(localStorage.getItem("rankingList")).length
-  : 0;
-    alert("Tổng số người đã tham gia: " + total);
-  } else {
-    alert("Sai mật khẩu!");
-  }
-}
-function showRankingWithPassword() {
-  const password = prompt("Nhập mật khẩu để xem bảng xếp hạng:");
-  if (password === "0966521047") {
-    document.getElementById("hiddenRanking").style.display = "block";
-  } else {
-    alert("Sai mật khẩu!");
-  }
-}
-
-
-
+// 🟣 ADMIN ĐĂNG NHẬP
 let isAdmin = false;
 
 function showAdminLogin() {
@@ -214,18 +142,12 @@ function showAdminLogin() {
   }
 }
 
-// Cập nhật các hàm bảo vệ để kiểm tra isAdmin
 function showResetPrompt() {
   if (!isAdmin) {
     alert("Chức năng này cần đăng nhập quản trị viên.");
     return;
   }
-  if (confirm("Bạn có chắc muốn xóa toàn bộ bảng xếp hạng không?")) {
-    rankingList = [];
-    updateRankingTable();
-    localStorage.removeItem("rankingList");
-    alert("Đã xóa bảng xếp hạng.");
-  }
+  alert("Reset dữ liệu phải thực hiện trực tiếp trong Google Sheet.");
 }
 
 function showViewParticipantsPrompt() {
@@ -233,10 +155,11 @@ function showViewParticipantsPrompt() {
     alert("Chức năng này cần đăng nhập quản trị viên.");
     return;
   }
-  const total = localStorage.getItem("rankingList")
-    ? JSON.parse(localStorage.getItem("rankingList")).length
-    : 0;
-  alert("Tổng số người đã tham gia: " + total);
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      alert("Tổng số người đã tham gia: " + data.length);
+    });
 }
 
 function showRankingWithPassword() {
@@ -245,4 +168,9 @@ function showRankingWithPassword() {
     return;
   }
   document.getElementById("hiddenRanking").style.display = "block";
+  loadRanking();
 }
+
+window.onload = () => {
+  loadRanking();
+};
